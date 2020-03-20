@@ -23,112 +23,84 @@ class Matrix {
     }
 
     getRowsSums() {
-        const sumVector = new Array(this.size).fill(0);
+        const sumVector = new Map();
         this.data.forEach((elem) => {
-            sumVector[elem.row] += elem.value;
+            if (!elem.inGroup) {
+                if (sumVector.has(elem.row)) {
+                    const value = sumVector.get(elem.row);
+                    sumVector.set(elem.row, value + elem.value);
+                } else {
+                    sumVector.set(elem.row, elem.value);
+                }
+            }
         });
         return sumVector;
     }
 
-    getRowsSums2() {
-        const sumVector = [];
+    excludeInternalDependencies(deltaVector) {
+        for (let [keyI, valueI] of deltaVector) {
+            let internalDepSum = 0;
+            for (let [keyJ, valueJ] of deltaVector) {
+                let value = this.getElem(keyI, keyJ);
+                internalDepSum += value;
+            }
+            deltaVector.set(keyI, valueI - internalDepSum);
+        }
+    }
+
+    getDeltaVector(containerSize) {
+        const sumVector = this.getRowsSums();
+        let minLinkedVertex = sumVector.keys().next().value;
+        sumVector.forEach((value, key, map) => {
+            if (value < map.get(minLinkedVertex)) {
+                minLinkedVertex = key;
+            }
+        });
+        const deltaVector = new Map();
+        deltaVector.set(minLinkedVertex, sumVector.get(minLinkedVertex));
         this.data.forEach((elem) => {
-            if (!elem.inGroup) {
-                let vectorHasElem = false;
-                for (let sumVectorElem of sumVector) {
-                    if (sumVectorElem.row === elem.row) {
-                        vectorHasElem = true;
-                        sumVectorElem.value += elem.value;
+            if (elem.row === minLinkedVertex && elem.value !== 0 && !elem.inGroup) {
+                deltaVector.set(elem.col, sumVector.get(elem.col));
+            }
+        });
+        while (deltaVector.size < containerSize) {
+            for (let [key, value] of sumVector) {
+                if (!deltaVector.has(key)) {
+                    deltaVector.set(key, value);
+                    if (deltaVector.size === containerSize) {
                         break;
                     }
                 }
-                if (!vectorHasElem) {
-                    sumVector.push({
-                        row: elem.row,
-                        value: elem.value
-                    });
-                }
-            }
-        });
-        return sumVector;
-    }
-
-    excludeInternalDependencies(vector) {
-        for (let i = 0; i !== vector.length; i++) {
-            let internalDepSum = 0;
-            for (let j = 0; j !== vector.length; j++) {
-                let value = this.getElem(vector[i].col, vector[j].col);
-                internalDepSum += value;
-            }
-            vector[i].value -= internalDepSum;
-        }
-    }
-
-    getDeltaVector() {
-        // const sumVector = this.getRowsSums();
-        const sumVector2 = this.getRowsSums2();
-
-        console.table(sumVector2);
-
-        let minLinkedVertexIndex = 0;
-        for (let i = 0; i !== sumVector2.length; i++) {
-            if (sumVector2[i].value < sumVector2[minLinkedVertexIndex].value) {
-                minLinkedVertexIndex = i;
             }
         }
-        const minLinkedVertex2 = sumVector2[minLinkedVertexIndex];
-        // const minLinkedVertex = sumVector.indexOf(Math.min(...sumVector));
-        
-        const deltaVector = [];
-        deltaVector.push({
-            col: minLinkedVertex2.row,
-            value: minLinkedVertex2.value,
-        });
-        this.data.forEach((elem) => {
-            if (elem.row === minLinkedVertex2.row && elem.value !== 0) {
-                let linksAmount = '.|.';
-                console.log('+++');
-                for (let i = 0; i !== sumVector2.length; i++) {
-                    if (sumVector2[i].row === elem.row) {
-                        linksAmount = sumVector2[i].value;
-                        console.log('ZALUPA', sumVector2[i]);
-                    }
-                }
-                deltaVector.push({
-                    col: elem.col,
-                    value : linksAmount
-                });
-            }
-        });
         this.excludeInternalDependencies(deltaVector);
+        while (deltaVector.size > containerSize) {
+            this.reduceDeltaVector(deltaVector);
+        }
         return deltaVector;
     }
 
     reduceDeltaVector(deltaVector) {
-        // find max
-        let maxElemIndex = 0;
-        deltaVector.forEach((elem, index) => {
-            if (deltaVector[maxElemIndex].value < elem.value) {
-                maxElemIndex = index;
+        let maxLinkedVertex = deltaVector.keys().next().value;
+        deltaVector.forEach((value, key, map) => {
+            if (value > map.get(maxLinkedVertex)) {
+                maxLinkedVertex = key;
             }
         });
-        // fix external dependencies
-        for (let i = 0; i !== deltaVector.length; i++) {
-            let value = this.getElem(deltaVector[i].col, deltaVector[maxElemIndex].col);
-            deltaVector[i].value += value;
-        }
-        // console.log('Delete elem: ', deltaVector[maxElemIndex]);
-        deltaVector.splice(maxElemIndex, 1);
+        deltaVector.forEach((value, key, map) => {
+            let externalDepCount = this.getElem(key, maxLinkedVertex);
+            map.set(key, value + externalDepCount);
+        });
+        deltaVector.delete(maxLinkedVertex);
     }
 
     excludeGroup(group) {
-        console.log('GROUP: ', group);
         for (let i = 0; i !== this.size * this.size; i++) {
-            for (let j = 0; j !== group.length; j++) {
-                if (group[j].col === this.data[i].col || group[j].col === this.data[i].row) {
+            group.forEach((value, key) => {
+                if (key === this.data[i].col || key === this.data[i].row) {
                     this.data[i].inGroup = true;
                 }
-            }
+            });
         }
     }
 
@@ -144,7 +116,7 @@ class Matrix {
             matrix[i] = new Array(this.size);
         }
         this.data.forEach((elem) => {
-            matrix[elem.row][elem.col] = (elem.inGroup) ? '_' : elem.value;
+            matrix[elem.row][elem.col] = (elem.inGroup) ? '▒' : elem.value;
         });
         console.table(matrix);
     }

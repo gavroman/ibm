@@ -14,32 +14,44 @@ let readFile = () => {
 let calculate = (matrix, containersVariant) => {
     const containers = new Array(containersVariant.length);
     matrix.resetGroups();
-    // for (let i = 0; i !== containers.length; i++) {
-        const containerSize = containersVariant[0];
-        const deltaVector = matrix.getDeltaVector();
-
-        while (deltaVector.length !== containerSize) {
-            console.log(deltaVector);
-            matrix.reduceDeltaVector(deltaVector);
-        }
-        console.log(deltaVector);
+    for (let i = 0; i !== containers.length; i++) {
+        let containerSize = containersVariant[i];
+        let deltaVector = matrix.getDeltaVector(containerSize);
         matrix.excludeGroup(deltaVector);
-        // matrix.print();
-       // containers[i] = deltaVector;
-    // }
+        containers[i] = deltaVector;
+        for (let elem in deltaVector) {
+            containers[i][elem] = deltaVector[elem];
+        }
+    }
+    let externalLinksCount = 0;
+    containers.forEach((elem) => {
+        Array.from(elem.values()).forEach((links) => {
+            externalLinksCount += links;
+        });
+        // console.log('Vertexes: ', elem.size, elem.keys(), 'Links:', elem.values());
+    });
     // console.log(containersVariant);
-    // console.log(containers);
-
-    // matrix.print();
+    // console.log('External links:', externalLinksCount);
+    return {containers, externalLinksCount};
 };
 
 (async () => {
     // const containerVariants = Generator.getContainersVariants([3, 4, 5, 6, 7], 5, 10, 30);
     const containerVariants = Generator.calculatedContainersVariants;
-    // console.log(containerVariants);
 
     const parsedCSV = await readFile();
     const matrix = new Matrix(parsedCSV);
 
-    calculate(matrix, containerVariants[0]);
+    let variants = new Array(containerVariants.length);
+    containerVariants.forEach((elem, index) => {
+        variants[index] = calculate(matrix, elem);
+    });
+    let optimalVariant = variants[0];
+    variants.forEach((elem, index) => {
+        if (optimalVariant.externalLinksCount > elem.externalLinksCount) {
+            optimalVariant = elem;
+            optimalVariant.containersVariant = containerVariants[index];
+        }
+    });
+    console.log(optimalVariant);
 })();
