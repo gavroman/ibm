@@ -14,6 +14,18 @@ class Matrix {
         }
     }
 
+    print() {
+        const matrix = new Array(this.size);
+        for (let i = 0; i !== this.size; i++) {
+            matrix[i] = new Array(this.size);
+        }
+        this.data.forEach((elem) => {
+            matrix[elem.row][elem.col] = (elem.inGroup) ? '▒' : elem.value;
+        });
+        console.table(matrix);
+    }
+
+//------------------------------ Task 1.1 ------------------------------
     getElem(i, j) {
         return this.data.find((elem) => {
             if (elem.row === i && elem.col === j) {
@@ -37,61 +49,29 @@ class Matrix {
         return sumVector;
     }
 
-    excludeInternalDependencies(deltaVector) {
-        for (let [keyI, valueI] of deltaVector) {
+    excludeInternalDependencies() {
+        for (let [keyI, valueI] of this.deltaVector) {
             let internalDepSum = 0;
-            for (let [keyJ, valueJ] of deltaVector) {
+            for (let [keyJ, valueJ] of this.deltaVector) {
                 let value = this.getElem(keyI, keyJ);
                 internalDepSum += value;
             }
-            deltaVector.set(keyI, valueI - internalDepSum);
+            this.deltaVector.set(keyI, valueI - internalDepSum);
         }
     }
 
-    getDeltaVector(containerSize) {
-        const sumVector = this.getRowsSums();
-        let minLinkedVertex = sumVector.keys().next().value;
-        sumVector.forEach((value, key, map) => {
-            if (value < map.get(minLinkedVertex)) {
-                minLinkedVertex = key;
-            }
-        });
-        const deltaVector = new Map();
-        deltaVector.set(minLinkedVertex, sumVector.get(minLinkedVertex));
-        this.data.forEach((elem) => {
-            if (elem.row === minLinkedVertex && elem.value !== 0 && !elem.inGroup) {
-                deltaVector.set(elem.col, sumVector.get(elem.col));
-            }
-        });
-        while (deltaVector.size < containerSize) {
-            for (let [key, value] of sumVector) {
-                if (!deltaVector.has(key)) {
-                    deltaVector.set(key, value);
-                    if (deltaVector.size === containerSize) {
-                        break;
-                    }
-                }
-            }
-        }
-        this.excludeInternalDependencies(deltaVector);
-        while (deltaVector.size > containerSize) {
-            this.reduceDeltaVector(deltaVector);
-        }
-        return deltaVector;
-    }
-
-    reduceDeltaVector(deltaVector) {
-        let maxLinkedVertex = deltaVector.keys().next().value;
-        deltaVector.forEach((value, key, map) => {
+    reduceDeltaVector() {
+        let maxLinkedVertex = this.deltaVector.keys().next().value;
+        this.deltaVector.forEach((value, key, map) => {
             if (value > map.get(maxLinkedVertex)) {
                 maxLinkedVertex = key;
             }
         });
-        deltaVector.forEach((value, key, map) => {
+        this.deltaVector.forEach((value, key, map) => {
             let externalDepCount = this.getElem(key, maxLinkedVertex);
             map.set(key, value + externalDepCount);
         });
-        deltaVector.delete(maxLinkedVertex);
+        this.deltaVector.delete(maxLinkedVertex);
     }
 
     excludeGroup(group) {
@@ -110,16 +90,44 @@ class Matrix {
         });
     }
 
-    print() {
-        const matrix = new Array(this.size);
-        for (let i = 0; i !== this.size; i++) {
-            matrix[i] = new Array(this.size);
-        }
-        this.data.forEach((elem) => {
-            matrix[elem.row][elem.col] = (elem.inGroup) ? '▒' : elem.value;
+    getDeltaVector(containerSize) {
+        const sumVector = this.getRowsSums();
+        let minLinkedVertex = sumVector.keys().next().value;
+        sumVector.forEach((value, key, map) => {
+            if (value < map.get(minLinkedVertex)) {
+                minLinkedVertex = key;
+            }
         });
-        console.table(matrix);
+        this.deltaVector = new Map();
+        this.deltaVector.set(minLinkedVertex, sumVector.get(minLinkedVertex));
+        this.data.forEach((elem) => {
+            if (elem.row === minLinkedVertex && elem.value !== 0 && !elem.inGroup) {
+                this.deltaVector.set(elem.col, sumVector.get(elem.col));
+            }
+        });
+        while (this.deltaVector.size < containerSize) {
+            for (let [key, value] of sumVector) {
+                if (!this.deltaVector.has(key)) {
+                    this.deltaVector.set(key, value);
+                    if (this.deltaVector.size === containerSize) {
+                        break;
+                    }
+                }
+            }
+        }
+        this.excludeInternalDependencies(this.deltaVector);
+        while (this.deltaVector.size > containerSize) {
+            this.reduceDeltaVector(this.deltaVector);
+        }
+        this.excludeGroup(this.deltaVector);
+        return this.deltaVector;
     }
+
+//------------------------------ End Task 1.1 ------------------------------
+
+//------------------------------ Task 1.2 ------------------------------
+//------------------------------ End Task 1.2 ------------------------------
 }
+
 
 module.exports = Matrix;
