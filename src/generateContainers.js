@@ -66,7 +66,6 @@ let arraysEquals = (left, right) => {
 
 module.exports = {
     calculatedContainersVariants: require('../data/containers.json').variants,
-
     getContainersVariants: (availableSizes, minCount, maxCount, matrixSize) => {
         let resultArray = [];
 
