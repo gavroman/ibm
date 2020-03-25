@@ -74,6 +74,8 @@ class Solver {
             map.set(key, value + externalDepCount);
         });
         this.deltaVector.delete(maxLinkedVertex);
+        console.log('DELETE VERTEX:', maxLinkedVertex);
+        console.log('DELTA VECTOR:', this.deltaVector);
     }
 
     excludeGroup(group) {
@@ -93,13 +95,18 @@ class Solver {
     }
 
     getDeltaVector(containerSize) {
+        this.printMatrix();
         const sumVector = this.getRowsSums();
+        console.log('SUM VECTOR');
+        console.log(sumVector);
+
         let minLinkedVertex = sumVector.keys().next().value;
         sumVector.forEach((value, key, map) => {
             if (value < map.get(minLinkedVertex)) {
                 minLinkedVertex = key;
             }
         });
+        console.log('MIN LINKED VERTEX:', minLinkedVertex);
         this.deltaVector = new Map();
         this.deltaVector.set(minLinkedVertex, sumVector.get(minLinkedVertex));
         this.data.forEach((elem) => {
@@ -118,6 +125,7 @@ class Solver {
             }
         }
         this.excludeInternalDependencies(this.deltaVector);
+        console.log('DELTA VECTOR:', this.deltaVector);
         while (this.deltaVector.size > containerSize) {
             this.reduceDeltaVector(this.deltaVector);
         }
