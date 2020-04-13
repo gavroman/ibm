@@ -47,10 +47,13 @@ let getAllGroupVariants = (grouper) => {
     // const containersVariants = Generator.getContainersVariants([2, 3], 3, 3, 8);
     const containersVariants = Generator.calculatedContainersVariants;
     let groupVariants = new Array(containersVariants.length);
+
     // containersVariants.forEach((elem, index) => {
     //     groupVariants[index] = groupInContainers(grouper, elem);
     // });
-    groupVariants[0] = groupInContainers(grouper, containersVariants[4]);
+    groupVariants[0] = groupInContainers(grouper, containersVariants[7]);
+
+
     grouper.resetGroups();
     return groupVariants;
 };
@@ -79,10 +82,11 @@ let optimize = (grouper, solution) => {
 
 
 (async () => {
-    const parsedCSV = await readFile('data/variants.csv');
+    // const parsedCSV = await readFile('data/variants.csv');
     // const parsedCSV = await readFile('data/test.csv');
     // const parsedCSV = await readFile('data/testsem.csv');
     // const parsedCSV = await readFile('data/dimas.csv');
+    const parsedCSV = await readFile('data/egor.csv');
     const grouper = new Solver(parsedCSV);
 
     let variants = getAllGroupVariants(grouper);
